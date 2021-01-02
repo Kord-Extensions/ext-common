@@ -1,4 +1,4 @@
-package com.kotlindiscord.kordex.ext.name
+package com.kotlindiscord.kordex.ext.common
 
 /** Name class. Description here. **/
 class Name {
