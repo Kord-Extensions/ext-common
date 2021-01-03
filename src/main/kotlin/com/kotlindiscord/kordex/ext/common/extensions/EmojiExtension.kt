@@ -4,7 +4,9 @@ import com.kotlindiscord.kord.extensions.ExtensibleBot
 import com.kotlindiscord.kord.extensions.checks.inGuild
 import com.kotlindiscord.kord.extensions.checks.or
 import com.kotlindiscord.kord.extensions.extensions.KoinExtension
+import com.kotlindiscord.kord.extensions.utils.module
 import com.kotlindiscord.kordex.ext.common.configuration.emoji.EmojiConfig
+import com.kotlindiscord.kordex.ext.common.configuration.emoji.TomlEmojiConfig
 import com.kotlindiscord.kordex.ext.common.emoji.NamedEmoji
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.entity.GuildEmoji
@@ -12,6 +14,7 @@ import dev.kord.core.event.guild.EmojisUpdateEvent
 import dev.kord.core.event.guild.GuildCreateEvent
 import kotlinx.coroutines.flow.toList
 import org.koin.core.component.inject
+import org.koin.dsl.bind
 
 /**
  * Emoji extension, in charge of keeping track of custom emoji so you can easily retrieve them later.
@@ -36,6 +39,12 @@ class EmojiExtension(bot: ExtensibleBot) : KoinExtension(bot) {
          */
         fun getEmoji(emoji: NamedEmoji): String =
             emojis[emoji.name]?.mention ?: emoji.default
+    }
+
+    init {
+        if (k.getOrNull<EmojiConfig>() == null) {
+            k.module { single { TomlEmojiConfig() } bind EmojiConfig::class }
+        }
     }
 
     override val name: String = "emoji"

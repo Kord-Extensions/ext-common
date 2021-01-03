@@ -6,7 +6,7 @@ This module contains common code shared by the other extensions modules, as well
 
 # Provided Extensions
 
-* `EmojiExtension` via `bot.extEmoji()`, which exists to keep track of the custom emoji that other extensions may need.
+* `EmojiExtension`, which exists to keep track of the custom emoji that other extensions may need.
   Be sure to add this extension to your bot if you have any other extensions that need it!
 
 # Getting Started
@@ -37,3 +37,12 @@ following configuration keys are available:
 
 * `emoji.guilds`: List of guild IDs to index custom emoji from, if required - omit this or set it to an empty list and all guilds will be indexes, in the order the bot joined them in.
 * `emoji.overrides`: Mapping of emoji names to guild IDs, if you need emoji with a specific name to come from a specific guild while ignoring the sort list of the indexed guilds.
+
+If you'd like to provide your own configuration adapter, implement the `EmojiConfig` interface in your own class. You
+can then register it with Koin, by doing this before you start your bot:
+
+```kotlin
+bot.koin.module {
+    single { CustomEmojiConfig() } bind EmojiConfig::class
+}
+```
