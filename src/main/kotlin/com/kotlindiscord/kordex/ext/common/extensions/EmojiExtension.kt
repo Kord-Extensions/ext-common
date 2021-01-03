@@ -8,8 +8,8 @@ import com.kotlindiscord.kordex.ext.common.configuration.emoji.EmojiConfig
 import com.kotlindiscord.kordex.ext.common.emoji.NamedEmoji
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.entity.GuildEmoji
-import dev.kord.core.event.gateway.ReadyEvent
 import dev.kord.core.event.guild.EmojisUpdateEvent
+import dev.kord.core.event.guild.GuildCreateEvent
 import kotlinx.coroutines.flow.toList
 import org.koin.core.component.inject
 
@@ -44,13 +44,16 @@ class EmojiExtension(bot: ExtensibleBot) : KoinExtension(bot) {
     val config: EmojiConfig by inject()
 
     override suspend fun setup() {
-        event<ReadyEvent> {
+        event<GuildCreateEvent> {
             action { populateEmojis() }
         }
 
         event<EmojisUpdateEvent> {
             check(
                 or(
+                    // No configured guilds? Do them all.
+                    { config.getGuilds().isEmpty() },
+
                     *config.getGuilds()
                         .mapNotNull { bot.kord.getGuild(it) }
                         .map { inGuild(it) }
@@ -63,7 +66,15 @@ class EmojiExtension(bot: ExtensibleBot) : KoinExtension(bot) {
     }
 
     private suspend fun populateEmojis(forGuildId: Snowflake? = null) {
-        val emojiGuilds = config.getGuilds().mapNotNull { bot.kord.getGuild(it) }
+        val configuredGuilds = config.getGuilds()
+
+        val emojiGuilds = if (configuredGuilds.isEmpty()) {
+            // No configured guilds? Do them all. Sorted by join time.
+
+            bot.kord.guilds.toList().sortedBy { it.joinedTime }
+        } else {
+            configuredGuilds.mapNotNull { bot.kord.getGuild(it) }
+        }
 
         val guildEmojis = emojiGuilds.map { guild ->
             guild.id to guild.emojis.toList()
@@ -77,8 +88,19 @@ class EmojiExtension(bot: ExtensibleBot) : KoinExtension(bot) {
 
         emojiGuilds.map { it.id }.forEach { guildId ->
             if (forGuildId == null || forGuildId == guildId) {
-                guildEmojis[guildId]!!.forEach {
-                    if (it.name != null && !emojis.containsKey(it.name)) {
+                guildEmojis[guildId]!!.forEach emojiLoop@{
+                    if (it.name == null) {
+                        return@emojiLoop
+                    }
+
+                    val override = config.getGuildOverride(it.name!!)
+
+                    if (override != null && override != guildId) {
+                        return@emojiLoop
+                    }
+
+                    if (override != null || !emojis.containsKey(it.name)) {
+                        // We do the check this way in case we had an older emoji cached or something
                         emojis[it.name!!] = it
                     }
                 }
