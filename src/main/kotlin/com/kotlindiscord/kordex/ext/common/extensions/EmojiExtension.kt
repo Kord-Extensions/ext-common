@@ -3,54 +3,21 @@ package com.kotlindiscord.kordex.ext.common.extensions
 import com.kotlindiscord.kord.extensions.ExtensibleBot
 import com.kotlindiscord.kord.extensions.checks.inGuild
 import com.kotlindiscord.kord.extensions.checks.or
-import com.kotlindiscord.kord.extensions.extensions.KoinExtension
-import com.kotlindiscord.kord.extensions.utils.module
+import com.kotlindiscord.kord.extensions.extensions.Extension
+import com.kotlindiscord.kordex.ext.common.builders.ExtCommonBuilder
 import com.kotlindiscord.kordex.ext.common.configuration.emoji.EmojiConfig
-import com.kotlindiscord.kordex.ext.common.configuration.emoji.TomlEmojiConfig
 import com.kotlindiscord.kordex.ext.common.emoji.NamedEmoji
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.entity.GuildEmoji
 import dev.kord.core.event.guild.EmojisUpdateEvent
 import dev.kord.core.event.guild.GuildCreateEvent
 import kotlinx.coroutines.flow.toList
-import org.koin.core.component.inject
-import org.koin.dsl.bind
 
 /**
  * Emoji extension, in charge of keeping track of custom emoji so you can easily retrieve them later.
  */
-class EmojiExtension(bot: ExtensibleBot) : KoinExtension(bot) {
-    companion object {
-        private val emojis: MutableMap<String, GuildEmoji> = mutableMapOf()
-
-        /**
-         * Get an emoji mention by string name, using the default parameter if it can't be found instead.
-         *
-         * @param name Emoji to retrieve.
-         * @param default String value to use if the emoji can't be found, defaulting to `:name:`.
-         */
-        fun getEmoji(name: String, default: String = ":$name:"): String =
-            emojis[name]?.mention ?: default
-
-        /**
-         * Get an emoji mention by [NamedEmoji] value, using the default property if the emoji can't be found instead.
-         *
-         * @param emoji Emoji to retrieve.
-         */
-        fun getEmoji(emoji: NamedEmoji): String =
-            emojis[emoji.name]?.mention ?: emoji.default
-    }
-
-    init {
-        if (k.getOrNull<EmojiConfig>() == null) {
-            k.module { single { TomlEmojiConfig() } bind EmojiConfig::class }
-        }
-    }
-
+class EmojiExtension(bot: ExtensibleBot) : Extension(bot) {
     override val name: String = "emoji"
-
-    /** Emoji config, retrieved via Koin. **/
-    val config: EmojiConfig by inject()
 
     override suspend fun setup() {
         event<GuildCreateEvent> {
@@ -63,10 +30,12 @@ class EmojiExtension(bot: ExtensibleBot) : KoinExtension(bot) {
                     // No configured guilds? Do them all.
                     { config.getGuilds().isEmpty() },
 
-                    *config.getGuilds()
-                        .mapNotNull { bot.kord.getGuild(it) }
-                        .map { inGuild(it) }
-                        .toTypedArray()
+                    {
+                        config.getGuilds()
+                            .mapNotNull { bot.kord.getGuild(it) }
+                            .map { inGuild { it } }
+                            .any()
+                    }
                 )
             )
 
@@ -114,6 +83,35 @@ class EmojiExtension(bot: ExtensibleBot) : KoinExtension(bot) {
                     }
                 }
             }
+        }
+    }
+
+    companion object {
+        private val emojis: MutableMap<String, GuildEmoji> = mutableMapOf()
+        private lateinit var builder: ExtCommonBuilder
+
+        private val config: EmojiConfig get() = builder.emojiConfig
+
+        /**
+         * Get an emoji mention by string name, using the default parameter if it can't be found instead.
+         *
+         * @param name Emoji to retrieve.
+         * @param default String value to use if the emoji can't be found, defaulting to `:name:`.
+         */
+        fun getEmoji(name: String, default: String = ":$name:"): String =
+            emojis[name]?.mention ?: default
+
+        /**
+         * Get an emoji mention by [NamedEmoji] value, using the default property if the emoji can't be found instead.
+         *
+         * @param emoji Emoji to retrieve.
+         */
+        fun getEmoji(emoji: NamedEmoji): String =
+            emojis[emoji.name]?.mention ?: emoji.default
+
+        /** @suppress Internal function used to pass the configured builder into the extension. **/
+        fun configure(builder: ExtCommonBuilder) {
+            this.builder = builder
         }
     }
 }

@@ -19,6 +19,24 @@ that makes use of one of the extensions in this one, you may need to configure t
 
 None of the bundled extensions add any commands or user-facing components.
 
+At its simplest, you can add the extensions directly to your bot with no further configuration. For example:
+
+```kotlin
+suspend fun main() {
+    val bot = ExtensibleBot(System.getenv("TOKEN")) {
+        commands {
+            defaultPrefix = "!"
+        }
+
+        extensions {
+            extCommon { }
+        }
+    }
+
+    bot.start()
+}
+```
+
 # Configuration: Emoji Extension
 
 * **Env var prefix:** `KORDX_EMOJI`
@@ -29,20 +47,34 @@ This extension makes use of the Konf library for configuration. Included in the 
 
 * **TOML file as a resource:** `kordex/emoji/config.toml`
 * **TOML file on the filesystem:** `config/ext/emoji.toml`
-* **Environment variables,** prefixed with `KORDX_EMOJI_`, upper-casing keys and replacing `.` with `_` in key names
-* **System properties,** prefixed with `kord.emoji.`
+* **Environment variables,** prefixed with `KORDEX_EMOJI_`, upper-casing keys and replacing `.` with `_` in key names
+* **System properties,** prefixed with `kordex.emoji.`
 
 For an example, feel free to [read the included default.toml](src/main/resources/kordex/emoji/default.toml). The
 following configuration keys are available:
 
-* `emoji.guilds`: List of guild IDs to index custom emoji from, if required - omit this or set it to an empty list and all guilds will be indexes, in the order the bot joined them in.
-* `emoji.overrides`: Mapping of emoji names to guild IDs, if you need emoji with a specific name to come from a specific guild while ignoring the sort list of the indexed guilds.
+* `emoji.guilds`: List of guild IDs to index custom emoji from, if required - omit this or set it to an empty list and
+  all guilds will be indexed, in the order the bot joined them in.
+* `emoji.overrides`: Mapping of emoji names to guild IDs, if you need emoji with a specific name to come from a 
+  specific guild while ignoring the sorted list of indexed guilds.
 
 If you'd like to provide your own configuration adapter, implement the `EmojiConfig` interface in your own class. You
-can then register it with Koin, by doing this before you start your bot:
+can then register it in the builder when you set up your bot:
 
 ```kotlin
-bot.koin.module {
-    single { CustomEmojiConfig() } bind EmojiConfig::class
+suspend fun main() {
+  val bot = ExtensibleBot(System.getenv("TOKEN")) {
+    commands {
+      defaultPrefix = "!"
+    }
+
+    extensions {
+      extCommon {
+          emojiConfig = CustomEmojiConfig()
+      }
+    }
+  }
+
+  bot.start()
 }
 ```
