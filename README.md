@@ -39,8 +39,8 @@ suspend fun main() {
 
 # Configuration: Emoji Extension
 
-* **Env var prefix:** `KORDX_EMOJI`
-* **System property prefix:** `kordx.emoji`
+* **Env var prefix:** `KORDEX_EMOJI`
+* **System property prefix:** `kordex.emoji`
 
 This extension makes use of the Konf library for configuration. Included in the JAR is a default configuration file,
 `kordex/emoji/default.toml`. You may configure the extension in one of the following ways:
