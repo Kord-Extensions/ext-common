@@ -93,28 +93,3 @@ public abstract class SerializedData<T : Any>(
         }
     }
 }
-
-/* Testing code for a non-abstract version, included as a simple example
-@Serializable
-data class Test(var x: String)
-
-fun main() {
-    val data = SerializedData(
-        "test",
-        "kordex",
-        serializer(),
-        { Test("a") }
-    )
-
-    data.load()
-
-    println(data.data.x)
-
-    data.data.x = "b"
-
-    data.save()
-    data.load()
-
-    println(data.data.x)
-}
-*/
