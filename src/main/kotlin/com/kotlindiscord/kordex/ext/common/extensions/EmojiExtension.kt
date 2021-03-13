@@ -88,7 +88,8 @@ class EmojiExtension(bot: ExtensibleBot) : Extension(bot) {
 
     companion object {
         private val emojis: MutableMap<String, GuildEmoji> = mutableMapOf()
-        private lateinit var builder: ExtCommonBuilder
+        private var builder: ExtCommonBuilder = ExtCommonBuilder()
+        private var wasConfigured: Boolean = false
 
         private val config: EmojiConfig get() = builder.emojiConfig
 
@@ -112,6 +113,11 @@ class EmojiExtension(bot: ExtensibleBot) : Extension(bot) {
         /** @suppress Internal function used to pass the configured builder into the extension. **/
         fun configure(builder: ExtCommonBuilder) {
             this.builder = builder
+
+            wasConfigured = true
         }
+
+        /** Returns `true` if the extension has been configured, `false` if it's using the default. **/
+        fun isConfigured() = wasConfigured
     }
 }
